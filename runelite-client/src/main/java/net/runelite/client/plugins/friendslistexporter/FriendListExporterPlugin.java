@@ -6,6 +6,7 @@ import net.runelite.api.Client;
 import net.runelite.api.Friend;
 import net.runelite.api.GameState;
 import net.runelite.api.events.GameStateChanged;
+import net.runelite.api.events.GameTick;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
@@ -26,12 +27,22 @@ import java.nio.file.Paths;
 )
 public class FriendListExporterPlugin extends Plugin
 {
+    public boolean exported;
+
     @Inject
     private Client client;
+
+    @Override
+    protected void startUp()
+    {
+        exported = false;
+    }
 
     @Subscribe
     public void onGameStateChanged(GameStateChanged gameState)
     {
+        exported = false;
+
         if (gameState.getGameState() == GameState.LOGGED_IN)
         {
            try
@@ -44,42 +55,63 @@ public class FriendListExporterPlugin extends Plugin
         }
     }
 
+    @Subscribe
+    public void onGameTick(GameTick tick)
+    {
+        if (!exported)
+        {
+            try
+            {
+                export();;
+            } catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        }
+    }
+
     public void export() throws Exception
     {
-        Path file = Paths.get(FileSystemView.getFileSystemView().getHomeDirectory().getPath());
-        System.out.println("hi");
-        try
+        if (!exported)
         {
-            Files.createFile(Paths.get(file.toString() + "/Friends.txt"));
-            Path friendFile = Paths.get(file.toString() + "/Friends.txt");
-            PrintWriter writer = new PrintWriter(new FileWriter(friendFile.toFile()));
-            for (Friend friend : client.getFriends())
+            Path file = Paths.get(FileSystemView.getFileSystemView().getHomeDirectory().getPath());
+            System.out.println("hi");
+            try
             {
-                if (friend != null)
+                Files.createFile(Paths.get(file.toString() + "/Friends.txt"));
+                Path friendFile = Paths.get(file.toString() + "/Friends.txt");
+                PrintWriter writer = new PrintWriter(new FileWriter(friendFile.toFile()));
+                for (Friend friend : client.getFriends())
                 {
-                    writer.println(friend.getName());
+                    if (friend != null)
+                    {
+                        writer.println(friend.getName());
+                    }
                 }
+                writer.flush();
+                writer.close();
+                log.debug("Friend Export Complete: " + Paths.get(FileSystemView.getFileSystemView().getHomeDirectory().getPath()));
             }
-            writer.flush();
-            writer.close();
-        }
-        catch (FileAlreadyExistsException e)
-        {
-            PrintWriter writer = new PrintWriter(FileSystemView.getFileSystemView().getHomeDirectory().getPath() + "/Friends.txt");
-            writer.print("");
-            for (Friend friend : client.getFriends())
+            catch (FileAlreadyExistsException e)
             {
-                if (friend != null)
+                PrintWriter writer = new PrintWriter(FileSystemView.getFileSystemView().getHomeDirectory().getPath() + "/Friends.txt");
+                writer.print("");
+                for (Friend friend : client.getFriends())
                 {
-                    writer.println(friend.getName());
+                    if (friend != null)
+                    {
+                        writer.println(friend.getName());
+                    }
                 }
+                writer.flush();
+                writer.close();
+                log.debug("Friend Export Complete: " + Paths.get(FileSystemView.getFileSystemView().getHomeDirectory().getPath()));
             }
-            writer.flush();
-            writer.close();
+            catch (IOException e)
+            {
+                e.printStackTrace();
+            }
         }
-        catch (IOException e)
-        {
-            e.printStackTrace();
-        }
+        exported = true;
     }
 }
