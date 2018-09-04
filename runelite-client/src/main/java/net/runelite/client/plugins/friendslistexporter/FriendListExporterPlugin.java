@@ -5,6 +5,7 @@ import lombok.extern.slf4j.Slf4j;
 import net.runelite.api.Client;
 import net.runelite.api.Friend;
 import net.runelite.api.GameState;
+import net.runelite.api.events.GameStateChanged;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 
@@ -29,9 +30,9 @@ public class FriendListExporterPlugin extends Plugin
     private Client client;
 
     @Subscribe
-    public void onGameStateChanged(GameState gameState)
+    public void onGameStateChanged(GameStateChanged gameState)
     {
-        if (gameState == GameState.LOGGED_IN)
+        if (gameState.getGameState() == GameState.LOGGED_IN)
         {
            try
            {
